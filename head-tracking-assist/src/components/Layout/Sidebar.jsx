@@ -29,10 +29,10 @@ const Sidebar = () => {
     const navItems = allNavItems.filter(item => !item.roles || item.roles.includes(role));
 
     return (
-        <aside className="sidebar">
-            <div className="sidebar-header">
-                <div className="logo-icon">V</div>
-                <h2 className="logo-text">VirtClass</h2>
+        <aside className="sidebar animate-enter">
+            <div className="sidebar-header" style={{ marginBottom: '4rem' }}>
+                <div className="logo-icon" style={{ borderRadius: '14px', width: '45px', height: '45px' }}>V</div>
+                <h2 className="logo-text" style={{ fontSize: '1.6rem', color: 'var(--brand-secondary)' }}>VirtClass</h2>
             </div>
 
             <nav className="sidebar-nav">
@@ -41,17 +41,55 @@ const Sidebar = () => {
                         key={item.name}
                         to={item.path}
                         className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                        style={({ isActive }) => ({
+                            padding: '1rem 1.4rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            borderRadius: '16px',
+                            fontWeight: 700,
+                            fontSize: '0.95rem',
+                            transition: 'var(--transition-smooth)',
+                            color: isActive ? 'white' : 'var(--text-secondary)',
+                            background: isActive ? 'var(--brand-primary)' : 'transparent',
+                            boxShadow: isActive ? '0 8px 16px rgba(99, 102, 241, 0.3)' : 'none'
+                        })}
                     >
-                        <span className="nav-icon">{item.icon}</span>
-                        <span className="nav-text">{item.name}</span>
+                        <span style={{ fontSize: '1.2rem' }}>{item.icon}</span>
+                        <span>{item.name}</span>
                     </NavLink>
                 ))}
             </nav>
 
-            <div className="sidebar-footer">
-                <button onClick={handleLogout} className="logout-btn">
-                    <FaSignOutAlt className="nav-icon" />
-                    <span>Logout</span>
+            <div className="sidebar-footer" style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '2rem' }}>
+                <button 
+                    onClick={handleLogout} 
+                    className="logout-btn"
+                    style={{
+                        padding: '1rem 1.4rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        width: '100%',
+                        borderRadius: '16px',
+                        background: 'rgba(239, 68, 68, 0.05)',
+                        border: '1px solid rgba(239, 68, 68, 0.1)',
+                        color: 'var(--danger)',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        transition: 'var(--transition-smooth)'
+                    }}
+                    onMouseOver={(e) => {
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                        e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+                    }}
+                    onMouseOut={(e) => {
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)';
+                        e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.1)';
+                    }}
+                >
+                    <FaSignOutAlt style={{ fontSize: '1.1rem' }} />
+                    <span>Sign Out</span>
                 </button>
             </div>
         </aside>
