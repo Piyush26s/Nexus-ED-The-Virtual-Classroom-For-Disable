@@ -1,17 +1,21 @@
-import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FaGoogle, FaUserGraduate, FaUser } from 'react-icons/fa';
+import { FaGoogle, FaUserGraduate, FaUser, FaHandsHelping, FaEye, FaBrain } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
+import { useAccessibility } from '../context/AccessibilityContext';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [role, setRole] = useState('student');
+    const [profile, setProfile] = useState('none');
+    
     const { login } = useAuth();
+    const { applyProfile } = useAccessibility();
     const navigate = useNavigate();
 
     const handleLogin = (e) => {
         e.preventDefault();
+        applyProfile(profile);
         login({ email }, role);
         navigate(role === 'teacher' ? '/teacher' : '/dashboard');
     };
@@ -72,6 +76,36 @@ const Login = () => {
                         >
                             <FaUserGraduate /> Teacher
                         </button>
+                    </div>
+
+                    <div className="profile-selection" style={{ marginBottom: '1.5rem' }}>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginBottom: '0.8rem', fontWeight: 'bold' }}>
+                            TAILOR YOUR EXPERIENCE (OPTIONAL):
+                        </p>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+                            {[
+                                { id: 'none', label: 'Standard', icon: <FaUser /> },
+                                { id: 'motor', label: 'Motor', icon: <FaHandsHelping /> },
+                                { id: 'visual', label: 'Vision', icon: <FaEye /> },
+                                { id: 'cognitive', label: 'Learning', icon: <FaBrain /> }
+                            ].map(p => (
+                                <button
+                                    key={p.id}
+                                    type="button"
+                                    onClick={() => setProfile(p.id)}
+                                    style={{
+                                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
+                                        padding: '10px 5px', borderRadius: '8px', border: '1px solid #ddd',
+                                        background: profile === p.id ? '#e0f2fe' : 'transparent',
+                                        borderColor: profile === p.id ? 'var(--primary-color)' : '#ddd',
+                                        cursor: 'pointer', transition: '0.2s'
+                                    }}
+                                >
+                                    <span style={{ fontSize: '1.2rem', color: profile === p.id ? 'var(--primary-color)' : '#666' }}>{p.icon}</span>
+                                    <span style={{ fontSize: '0.65rem', fontWeight: 'bold' }}>{p.label}</span>
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     <form onSubmit={handleLogin}>

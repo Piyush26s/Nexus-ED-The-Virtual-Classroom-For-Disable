@@ -16,8 +16,21 @@ export const AccessibilityProvider = ({ children }) => {
         setSettings(prev => ({ ...prev, [key]: !prev[key] }));
     };
 
+    const applyProfile = (profileType) => {
+        const profiles = {
+            'motor': { headTracking: true, voiceControl: true, highContrast: false, screenReader: false },
+            'visual': { headTracking: false, voiceControl: true, highContrast: true, screenReader: true },
+            'cognitive': { headTracking: false, voiceControl: false, highContrast: false, screenReader: true },
+            'none': { headTracking: false, voiceControl: false, highContrast: false, screenReader: false }
+        };
+
+        if (profiles[profileType]) {
+            setSettings(profiles[profileType]);
+        }
+    };
+
     return (
-        <AccessibilityContext.Provider value={{ settings, toggleSetting }}>
+        <AccessibilityContext.Provider value={{ settings, toggleSetting, applyProfile }}>
             {children}
         </AccessibilityContext.Provider>
     );
