@@ -2,7 +2,6 @@ import React from 'react';
 import { FaDesktop, FaMoon, FaSun, FaUser } from 'react-icons/fa';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import styles from './Header.module.css';
 
 const Header = () => {
     const { theme, toggleTheme } = useTheme();
