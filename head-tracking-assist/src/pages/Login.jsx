@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FaGoogle, FaUserGraduate, FaUser, FaHandsHelping, FaEye, FaBrain } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
