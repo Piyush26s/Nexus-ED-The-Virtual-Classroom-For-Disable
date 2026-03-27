@@ -98,4 +98,4 @@ npm start
 3. **Flexibility & Efficiency**: Users can switch between Voice, Head Tracking, or Mouse at any time.
 
 ---
-*Built with ❤️ for a world where technology leaves no one behind.* 🏳️‍🌈
+*Built with ❤️ for a world where technology leaves no one behind . by Piyush * 🏳️‍🌈
