@@ -1,8 +1,6 @@
 import { useEffect, useRef } from 'react';
-// import { FaceMesh } from '@mediapipe/face_mesh';
-// import { Camera } from '@mediapipe/camera_utils';
-const FaceMesh = class {};
-const Camera = class {};
+import { FaceMesh } from '@mediapipe/face_mesh';
+import { Camera } from '@mediapipe/camera_utils';
 
 export const useHeadTracking = (videoRef, updateTracking) => {
     // Refs to valid state without restart
@@ -11,7 +9,9 @@ export const useHeadTracking = (videoRef, updateTracking) => {
         camera: null,
         isInitialized: false,
         smoothedYaw: 0,
-        smoothedPitch: 0
+        smoothedPitch: 0,
+        baselineYaw: 0,
+        baselinePitch: 0
     });
 
     useEffect(() => {
@@ -64,21 +64,39 @@ export const useHeadTracking = (videoRef, updateTracking) => {
 
                     trackingRef.current.faceMesh = faceMesh;
 
-                    // Initialize Camera Utils
-                    console.log("📷 Connecting Camera...");
-                    const camera = new Camera(videoRef.current, {
-                        onFrame: async () => {
-                            if (trackingRef.current.faceMesh) {
-                                await trackingRef.current.faceMesh.send({ image: videoRef.current });
+                    // Initialize Custom Frame Loop (More robust than Camera Utils in Vite)
+                    console.log("📷 Starting Custom Frame Capture Loop...");
+                    trackingRef.current.frameLoopActive = true;
+                    
+                    let lastVideoTime = -1;
+                    const processFrame = async () => {
+                        if (!trackingRef.current.frameLoopActive || !isMounted) return;
+                        
+                        // Proceed only if video element is ready and has valid dimensions
+                        if (videoRef.current && videoRef.current.readyState >= 2 && videoRef.current.videoWidth > 0) {
+                            if (videoRef.current.currentTime !== lastVideoTime) {
+                                lastVideoTime = videoRef.current.currentTime;
+                                if (trackingRef.current.faceMesh) {
+                                    try {
+                                        await trackingRef.current.faceMesh.send({ image: videoRef.current });
+                                    } catch (err) {
+                                        console.warn("FaceMesh frame skip...", err);
+                                    }
+                                }
                             }
-                        },
-                        width: 640,
-                        height: 480
-                    });
+                        }
+                        
+                        // Queue next frame
+                        requestAnimationFrame(processFrame);
+                    };
 
-                    trackingRef.current.camera = camera;
-                    await camera.start();
-                    console.log("📷 Camera Started");
+                    trackingRef.current.camera = { 
+                        stop: () => { trackingRef.current.frameLoopActive = false; }
+                    };
+                    
+                    // Start loop slightly delayed to ensure video stream is flowing
+                    setTimeout(() => requestAnimationFrame(processFrame), 600);
+                    console.log("📷 Camera Stream Processing Started");
 
                 } catch (error) {
                     console.error("❌ CRITICAL ERROR IN HEAD TRACKING:", error);
@@ -114,30 +132,58 @@ export const useHeadTracking = (videoRef, updateTracking) => {
             const chin = landmarks[152];
             const forehead = landmarks[10];
 
-            // CONFIGURATION
-            const SMOOTHING_FACTOR = 0.25; // Lower = smoother but slower
-            const DEADZONE = 0.08; // Ignore movements smaller than this
-            const SENSITIVITY = 25; // Amplification
+            // CONFIGURATION - Optimized for Smoothness and Accuracy
+            const BASE_SMOOTHING = 0.12; // High base smoothing to eliminate jitter
+            const DEADZONE = 0.04; // Very small deadzone for subtle detection
+            const SENSITIVITY = 35; // Higher sensitivity to catch precise head tilts
 
-            // YAW (Horizontal)
-            const midPointX = (leftEar.x + rightEar.x) / 2;
-            let rawYaw = (nose.x - midPointX) * SENSITIVITY;
+            // YAW & PITCH (Scale-Invariant Logarithmic Ratios)
+            // Using logarithmic ratio of distances makes tracking 100% symmetric and immune to camera distance!
+            
+            // Horizontal geometry
+            const distToLeftEar = Math.max(0.001, nose.x - leftEar.x); 
+            const distToRightEar = Math.max(0.001, rightEar.x - nose.x);
+            let absoluteYaw = Math.log(distToLeftEar / distToRightEar) * SENSITIVITY; 
 
-            // PITCH (Vertical) - Adjusted baseline to fix "not going down" issue
-            // We use a slight offset because nose is naturally higher than midpoint for the model
-            const midPointY = ((forehead.y + chin.y) / 2) - 0.02; 
-            let rawPitch = (nose.y - midPointY) * SENSITIVITY;
+            // Vertical geometry
+            const distToForehead = Math.max(0.001, nose.y - forehead.y);
+            const distToChin = Math.max(0.001, chin.y - nose.y);
+            // Reverse sign so UP is negative, DOWN is positive (matches our status logic)
+            let absolutePitch = -Math.log(distToChin / distToForehead) * SENSITIVITY; 
 
-            // Apply Deadzone (Prevent jitter from normal movements)
+            // --- ADAPTIVE AUTO-CENTERING (Leaky Integrator) ---
+            // Slowly drag the baseline towards the current absolute position
+            // But only if the user isn't making an extreme movement (looking away)
+            const isLookingAway = Math.abs(absoluteYaw - trackingRef.current.baselineYaw) > 1.2 || 
+                                  Math.abs(absolutePitch - trackingRef.current.baselinePitch) > 1.2;
+            
+            // If they are relatively stable, slowly update the "Neutral" center point
+            const LEAK_RATE = isLookingAway ? 0.0 : 0.01; 
+            
+            trackingRef.current.baselineYaw = (absoluteYaw * LEAK_RATE) + (trackingRef.current.baselineYaw * (1 - LEAK_RATE));
+            trackingRef.current.baselinePitch = (absolutePitch * LEAK_RATE) + (trackingRef.current.baselinePitch * (1 - LEAK_RATE));
+
+            // Calculate relative offset from the adaptive baseline
+            let rawYaw = absoluteYaw - trackingRef.current.baselineYaw;
+            let rawPitch = absolutePitch - trackingRef.current.baselinePitch;
+
+            // Apply Deadzone (Prevent micro-jitter when holding still)
             if (Math.abs(rawYaw) < DEADZONE) rawYaw = 0;
             if (Math.abs(rawPitch) < DEADZONE) rawPitch = 0;
 
-            // Apply EMA Smoothing
+            // Dynamic Smoothing (Fast response on large moves, smooth on small moves)
+            const yawDiff = Math.abs(rawYaw - trackingRef.current.smoothedYaw);
+            const pitchDiff = Math.abs(rawPitch - trackingRef.current.smoothedPitch);
+            
+            const dynamicYawAlpha = Math.min(BASE_SMOOTHING + (yawDiff * 0.15), 0.8);
+            const dynamicPitchAlpha = Math.min(BASE_SMOOTHING + (pitchDiff * 0.15), 0.8);
+
+            // Apply Adaptive EMA Tracking
             trackingRef.current.smoothedYaw = 
-                (rawYaw * SMOOTHING_FACTOR) + (trackingRef.current.smoothedYaw * (1 - SMOOTHING_FACTOR));
+                (rawYaw * dynamicYawAlpha) + (trackingRef.current.smoothedYaw * (1 - dynamicYawAlpha));
             
             trackingRef.current.smoothedPitch = 
-                (rawPitch * SMOOTHING_FACTOR) + (trackingRef.current.smoothedPitch * (1 - SMOOTHING_FACTOR));
+                (rawPitch * dynamicPitchAlpha) + (trackingRef.current.smoothedPitch * (1 - dynamicPitchAlpha));
 
             // --- GESTURE DETECTION (Mouth Click) ---
             const upperLip = landmarks[13];

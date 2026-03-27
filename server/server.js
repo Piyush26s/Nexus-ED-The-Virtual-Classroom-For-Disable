@@ -22,8 +22,8 @@ app.post('/api/auth/request-otp', (req, res) => {
     // In a mock environment, we allow any email to request an OTP
     // For registration, they don't exist yet!
 
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // Generate 6-digit OTP (Fixed for easy testing)
+    const otp = '123456';
     mockOTPs[email] = {
         otp,
         expires: Date.now() + 5 * 60 * 1000 // 5 minutes

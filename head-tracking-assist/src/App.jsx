@@ -66,7 +66,7 @@ function App() {
       <AuthProvider>
         <ThemeProvider>
           <AccessibilityProvider>
-            <HeadTrackingProvider enabled={false}>
+            <HeadTrackingProvider enabled={true}>
               <TrackingProvider>
                 <Router>
                   <AppContent />
