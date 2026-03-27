@@ -1,24 +1,43 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FaGoogle, FaUserGraduate, FaUser, FaHandsHelping, FaEye, FaBrain } from 'react-icons/fa';
+import { FaGoogle, FaUserGraduate, FaUser, FaHandsHelping, FaEye, FaEyeSlash, FaBrain } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { useAccessibility } from '../context/AccessibilityContext';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [role, setRole] = useState('student');
     const [profile, setProfile] = useState('none');
     
-    const { login } = useAuth();
+    const { login, loading, error: authError } = useAuth();
     const { applyProfile } = useAccessibility();
     const navigate = useNavigate();
+    const [loginError, setLoginError] = useState(null);
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        applyProfile(profile);
-        login({ email }, role);
-        navigate(role === 'teacher' ? '/teacher' : '/dashboard');
+        setLoginError(null);
+        
+        if (!email || !password) {
+            setLoginError('Please enter both email and password.');
+            return;
+        }
+
+        const result = await login(email, password, role);
+        
+        if (result.success) {
+            applyProfile(profile);
+            navigate(role === 'teacher' ? '/teacher' : '/dashboard');
+        } else {
+            setLoginError(result.message || 'Login failed. Please check your credentials.');
+        }
+    };
+
+    const handleGoogleLogin = () => {
+        // Mock Google Login
+        setLoginError('Google Login is under development. Please use email and password.');
     };
 
     return (
@@ -46,7 +65,23 @@ const Login = () => {
                         <p style={{ color: 'var(--text-secondary)' }}>Sign in to continue your learning journey.</p>
                     </div>
 
-                    <div className="role-selector" style={{ display: 'flex', gap: '0.8rem', marginBottom: '2rem' }}>
+                    {(loginError || authError) && (
+                        <div style={{ 
+                            padding: '1rem', 
+                            background: '#fee2e2', 
+                            color: '#b91c1c', 
+                            borderRadius: '12px', 
+                            marginBottom: '1.5rem',
+                            fontSize: '0.9rem',
+                            fontWeight: '600',
+                            textAlign: 'center',
+                            border: '1px solid #fecaca'
+                        }}>
+                            {loginError || authError}
+                        </div>
+                    )}
+
+                    <div className="role-selector" style={{ display: 'flex', gap: '0.8rem', marginBottom: '1.5rem' }}>
                         <button 
                             type="button" 
                             className={`role-btn ${role === 'student' ? 'active' : ''}`}
@@ -77,7 +112,7 @@ const Login = () => {
                         </button>
                     </div>
 
-                    <div className="profile-selection" style={{ marginBottom: '2.5rem' }}>
+                    <div className="profile-selection" style={{ marginBottom: '2rem' }}>
                         <p style={{ fontSize: '0.8rem', color: 'var(--brand-primary)', marginBottom: '1rem', fontWeight: '800', letterSpacing: '0.05em' }}>
                             TAILOR YOUR ASSISTIVE AI:
                         </p>
@@ -122,18 +157,80 @@ const Login = () => {
 
                         <div className="form-group">
                             <label>Password</label>
-                            <input
-                                type="password"
-                                className="input-field"
-                                placeholder="••••••••"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                            />
+                            <div style={{ position: 'relative' }}>
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    className="input-field"
+                                    placeholder="Enter your password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    style={{ paddingRight: '40px' }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    style={{
+                                        position: 'absolute',
+                                        right: '12px',
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        background: 'none',
+                                        border: 'none',
+                                        color: 'var(--text-muted)',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}
+                                >
+                                    {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+                                </button>
+                            </div>
                         </div>
 
-                        <button type="submit" className="btn-primary w-full" style={{ padding: '1.2rem', marginTop: '1rem', fontSize: '1.1rem' }}>
-                            Sign in to Dashboard
+                        <button 
+                            type="submit" 
+                            className="btn-primary w-full" 
+                            disabled={loading}
+                            style={{ 
+                                padding: '1.2rem', 
+                                marginTop: '1rem', 
+                                fontSize: '1.1rem',
+                                opacity: loading ? 0.7 : 1,
+                                cursor: loading ? 'not-allowed' : 'pointer'
+                            }}
+                        >
+                            {loading ? 'Authenticating...' : 'Sign in to Dashboard'}
+                        </button>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '1.5rem 0' }}>
+                            <div style={{ flex: 1, height: '1px', background: 'var(--border-medium)' }}></div>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>OR</span>
+                            <div style={{ flex: 1, height: '1px', background: 'var(--border-medium)' }}></div>
+                        </div>
+
+                        <button 
+                            type="button" 
+                            onClick={handleGoogleLogin}
+                            className="w-full"
+                            style={{ 
+                                padding: '1rem', 
+                                borderRadius: '12px',
+                                background: 'white',
+                                border: '1px solid var(--border-medium)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '12px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                color: 'var(--text-primary)',
+                                transition: 'var(--transition-smooth)',
+                                boxShadow: 'var(--shadow-sm)'
+                            }}
+                        >
+                            <FaGoogle size={20} style={{ color: '#DB4437' }} /> Continue with Google
                         </button>
                     </form>
 

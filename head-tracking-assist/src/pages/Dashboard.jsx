@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
-    const { role } = useAuth();
+    const { role, user } = useAuth();
     const { trackingData } = useHeadTrackingContext();
     const navigate = useNavigate();
 
@@ -22,7 +22,7 @@ const Dashboard = () => {
             <div className="flex-between" style={{ marginBottom: '3rem', alignItems: 'flex-start' }}>
                 <div>
                     <h1 style={{ fontSize: '2.8rem', fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--brand-secondary)' }}>
-                        Welcome back, Piyush
+                        Welcome back, {user?.name || 'Learner'}
                     </h1>
                     <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
                         You're doing great! Keep up the momentum.

@@ -1,6 +1,8 @@
 import React from 'react';
+import { useAuth } from '../context/AuthContext';
 
 const Settings = () => {
+    const { user } = useAuth();
     const handleSave = () => {
         alert("Success: Your settings have been updated!");
     };
@@ -16,11 +18,11 @@ const Settings = () => {
                     <div className="form-row">
                         <div className="form-group w-full">
                             <label>Full Name</label>
-                            <input className="input-field" defaultValue="Piyush" />
+                            <input className="input-field" defaultValue={user?.name || ''} />
                         </div>
                         <div className="form-group w-full">
                             <label>Email</label>
-                            <input className="input-field" defaultValue="piyush@example.com" />
+                            <input className="input-field" defaultValue={user?.email || ''} />
                         </div>
                     </div>
                     <button className="btn-primary" onClick={handleSave}>Save Changes</button>

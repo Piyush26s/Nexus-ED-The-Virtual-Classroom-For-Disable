@@ -1,10 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaMicrophone, FaPaperPlane, FaVolumeUp, FaRobot, FaUser } from 'react-icons/fa';
+import { useAuth } from '../context/AuthContext';
 
 const AIAssistant = () => {
+    const { user } = useAuth();
     const [messages, setMessages] = useState([
-        { id: 1, sender: 'ai', text: 'Hello Piyush! I am your AI learning companion. How can I assist you with your studies today?', time: '10:00 AM' }
+        { id: 1, sender: 'ai', text: `Hello ${user?.name || 'Learner'}! I am your AI learning companion. How can I assist you with your studies today?`, time: '10:00 AM' }
     ]);
+
+    useEffect(() => {
+        if (user?.name) {
+            setMessages(prev => {
+                const newMessages = [...prev];
+                if (newMessages.length > 0 && newMessages[0].sender === 'ai') {
+                    newMessages[0].text = `Hello ${user.name}! I am your AI learning companion. How can I assist you with your studies today?`;
+                }
+                return newMessages;
+            });
+        }
+    }, [user]);
+
     const [input, setInput] = useState('');
     const [isListening, setIsListening] = useState(false);
     const chatEndRef = useRef(null);

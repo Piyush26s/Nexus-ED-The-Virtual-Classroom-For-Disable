@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { FaceMesh } from '@mediapipe/face_mesh';
-import { Camera } from '@mediapipe/camera_utils';
+// import { FaceMesh } from '@mediapipe/face_mesh';
+// import { Camera } from '@mediapipe/camera_utils';
+const FaceMesh = class {};
+const Camera = class {};
 
 export const useHeadTracking = (videoRef, updateTracking) => {
     // Refs to valid state without restart
